@@ -1,0 +1,17 @@
+{
+  "family": "enterprise-ai-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/enterprise-ai-task-role",
+  "containerDefinitions": [{
+    "name": "api", "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/enterprise-ai:latest",
+    "essential": true, "portMappings": [{"containerPort": 8000, "protocol": "tcp"}],
+    "secrets": [{"name": "JWT_SECRET", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:enterprise-ai"}],
+    "environment": [{"name": "APP_ENV", "value": "production"}, {"name": "QDRANT_URL", "value": "https://qdrant.internal"}],
+    "logConfiguration": {"logDriver": "awslogs", "options": {"awslogs-group": "/ecs/enterprise-ai", "awslogs-region": "<REGION>", "awslogs-stream-prefix": "api"}},
+    "healthCheck": {"command": ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""], "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 30}
+  }]
+}
