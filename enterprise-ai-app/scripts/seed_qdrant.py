@@ -12,6 +12,6 @@ retriever = QdrantRetriever()
 retriever.ensure_collection()
 retriever.client.upsert(
     retriever.cfg.qdrant_collection,
-    points=[PointStruct(id=i + 1, vector=retriever.embed(text), payload={"text": text, "source": "employee-handbook"}) for i, text in enumerate(DOCS)],
+    points=[PointStruct(id=i + 1, vector=retriever.embed(text), payload={"text": text, "source": "employee-handbook", "tenant_id": "demo"}) for i, text in enumerate(DOCS)],
 )
 print(f"Seeded {len(DOCS)} documents into {retriever.cfg.qdrant_collection}")

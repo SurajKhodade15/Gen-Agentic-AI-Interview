@@ -1,8 +1,10 @@
 import json
 import boto3
+from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.config import get_settings
 
 class BedrockChat:
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8), reraise=True)
     def answer(self, question: str, context: list[dict]) -> str:
         cfg = get_settings()
         prompt = "You are an enterprise assistant. Answer only using context; state when it is insufficient.\n\nContext:\n" + "\n".join(x["text"] for x in context) + f"\n\nQuestion: {question}"

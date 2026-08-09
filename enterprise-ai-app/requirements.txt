@@ -5,6 +5,12 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 boto3==1.36.17
 qdrant-client==1.13.2
+redis==5.2.1
+slowapi==0.1.9
+PyJWT[crypto]==2.10.1
+tenacity==9.0.0
+opentelemetry-api==1.30.0
+opentelemetry-sdk==1.30.0
 langgraph==0.2.74
 langchain-core==0.3.34
 langchain-aws==0.2.14
