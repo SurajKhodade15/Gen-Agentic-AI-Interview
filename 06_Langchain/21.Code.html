@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>LangChain ReAct Agent - One Page</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      margin: 15px;
+      background: #f0f0f0;
+      line-height: 1.4;
+    }
+
+    .code-block {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      margin: 10px 0 8px 0;
+      color: #333;
+      font-size: 18px;
+    }
+
+    .c {
+      color: #008000;
+    }
+
+    /* Comment */
+    .k {
+      color: #0000ff;
+      font-weight: bold;
+    }
+
+    /* Keyword */
+    .s {
+      color: #a31515;
+    }
+
+    /* String */
+    .f {
+      color: #795e26;
+    }
+
+    /* Function */
+    pre {
+      margin: 0;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="code-block">
+    <h2>LangChain ReAct Agent - Medical Query Routing (One Page)</h2>
+    <pre><span class="c"># 1. IMPORTS</span>
+<span class="k">from</span> langchain_openai <span class="k">import</span> AzureChatOpenAI
+<span class="k">from</span> langchain_core.tools <span class="k">import</span> tool
+<span class="k">from</span> langchain_core.prompts <span class="k">import</span> PromptTemplate
+<span class="k">from</span> langchain.agents <span class="k">import</span> create_react_agent, AgentExecutor
+<span class="k">from</span> langchain.agents.output_parsers <span class="k">import</span> ReActSingleInputOutputParser
+
+<span class="c"># 2. TOOLS - Web Search & PubMed Search</span>
+<span class="k">@tool</span>
+<span class="k">def</span> <span class="f">web_search</span>(query: <span class="k">str</span>) -> <span class="k">str</span>:
+    <span class="s">"""Search web for non-medical info"""</span>
+    <span class="k">return</span> <span class="s">f</span><span class="s">"Web results for: {query}"</span>
+
+<span class="k">@tool</span>
+<span class="k">def</span> <span class="f">pubmed_search</span>(query: <span class="k">str</span>) -> <span class="k">str</span>:
+    <span class="s">"""Search PubMed for medical info"""</span>
+    <span class="k">return</span> <span class="s">f</span><span class="s">"PubMed results for: {query}"</span>
+
+tools = [web_search, pubmed_search]
+
+<span class="c"># 3. AZURE OPENAI CONFIGURATION</span>
+llm = AzureChatOpenAI(
+    azure_endpoint=<span class="s">"https://YOUR-RESOURCE.openai.azure.com/"</span>,
+    api_key=<span class="s">"YOUR_API_KEY"</span>, api_version=<span class="s">"2024-10-21"</span>,
+    azure_deployment=<span class="s">"gpt-4.1"</span>, temperature=0
+)
+
+<span class="c"># 4. PROMPT TEMPLATE WITH ROUTING LOGIC</span>
+prompt = PromptTemplate.from_template(<span class="s">"""You are intelligent agent with 2 tools: {tools}
+Tool names: {tool_names}
+
+ROUTING:
+- Medicine/health/disease/symptoms/drugs/treatment/clinical → pubmed_search
+- All other questions → web_search
+Format:
+Question: {input}
+Thought: (decide tool)
+Action: [web_search|pubmed_search]
+Action Input: (search query)
+Observation: (result)
+Final Answer: (response)
+
+{agent_scratchpad}"""</span>)
+
+<span class="c"># 5. CREATE & EXECUTE AGENT</span>
+output_parser = ReActSingleInputOutputParser()
+agent = create_react_agent(llm=llm, tools=tools, prompt=prompt, output_parser=output_parser)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=<span class="k">True</span>)
+
+<span class="c"># 6. INVOKE AGENT WITH QUERY</span>
+response = agent_executor.invoke({<span class="s">"input"</span>: <span class="s">"What are symptoms of diabetes?"</span>})
+        </pre>
+  </div>
+</body>
+
+</html>
