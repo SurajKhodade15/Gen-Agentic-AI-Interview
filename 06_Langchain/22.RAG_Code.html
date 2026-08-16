@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>RAG One Page</title>
+  <style>
+    body {
+      margin: 10px;
+      background: #f6f6f6;
+      font: 12px/1.35 Consolas, 'Courier New', monospace
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word
+    }
+
+    .card {
+      background: #fff;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px
+    }
+
+    .c {
+      color: #2e7d32
+    }
+
+    .k {
+      color: #0b57d0;
+      font-weight: 700
+    }
+
+    .n {
+      color: #111
+    }
+
+    .s {
+      color: #b3261e
+    }
+
+    .f {
+      color: #7a4c00
+    }
+
+    .o {
+      color: #7b1fa2
+    }
+
+    .nb {
+      color: #006064
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <pre><span class="c"># pip install langchain langchain-openai langchain-community</span> <span class="c"># pip install azure-storage-blob azure-search-documents</span>
+<span class="k">from</span> langchain_openai <span class="k">import</span> AzureChatOpenAI, AzureOpenAIEmbeddings
+<span class="k">from</span> langchain_community.document_loaders <span class="k">import</span> AzureBlobStorageContainerLoader
+<span class="k">from</span> langchain_community.vectorstores.azuresearch <span class="k">import</span> AzureSearch
+<span class="k">from</span> langchain_text_splitters <span class="k">import</span> RecursiveCharacterTextSplitter
+<span class="k">from</span> langchain_core.documents <span class="k">import</span> Document
+<span class="k">from</span> langchain_core.messages <span class="k">import</span> HumanMessage
+
+<span class="c"># 1. AZURE OPENAI</span>
+llm = AzureChatOpenAI(azure_endpoint=<span class="s">"https://YOUR-RESOURCE.openai.azure.com/"</span>, api_key=<span class="s">"YOUR_OPENAI_API_KEY"</span>, api_version=<span class="s">"2024-10-21"</span>, azure_deployment=<span class="s">"gpt-4o"</span>, temperature=<span class="n">0</span>)
+embeddings = AzureOpenAIEmbeddings(azure_endpoint=<span class="s">"https://YOUR-RESOURCE.openai.azure.com/"</span>, api_key=<span class="s">"YOUR_OPENAI_API_KEY"</span>, api_version=<span class="s">"2024-10-21"</span>, azure_deployment=<span class="s">"text-embedding-3-large"</span>)
+
+<span class="c"># 2. LOAD DOCS</span>
+loader = AzureBlobStorageContainerLoader(conn_str=<span class="s">"YOUR_BLOB_CONNECTION_STRING"</span>, container=<span class="s">"documents"</span>)
+documents = loader.load()
+
+<span class="c"># 3. CHUNKING</span>
+splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="n">1000</span>, chunk_overlap=<span class="n">150</span>)
+chunks = splitter.split_documents(documents)
+
+<span class="c"># 4,5. EMBED + STORE</span>
+AZURE_SEARCH_ENDPOINT = <span class="s">"https://YOUR-SEARCH-SERVICE.search.windows.net"</span>
+AZURE_SEARCH_KEY = <span class="s">"YOUR_SEARCH_ADMIN_KEY"</span>
+INDEX_NAME = <span class="s">"rag-index"</span>
+vector_store = AzureSearch(azure_search_endpoint=AZURE_SEARCH_ENDPOINT, azure_search_key=AZURE_SEARCH_KEY, index_name=INDEX_NAME, embedding_function=embeddings.embed_query, search_type=<span class="s">"hybrid"</span>)
+vector_store.add_documents(documents=chunks)
+
+<span class="c"># 6,7. QUERY + RETRIEVE</span>
+query = <span class="s">"What is the company's leave policy?"</span>
+retrieved_docs = vector_store.similarity_search(query=query, k=<span class="n">5</span>)
+
+<span class="c"># 8. BUILD CONTEXT</span>
+context = <span class="s">"\n\n"</span>.join(doc.page_content <span class="k">for</span> doc <span class="k">in</span> retrieved_docs)
+
+<span class="c"># 9. GENERATE ANSWER</span>
+prompt = <span class="s">f"""Answer the question using ONLY the provided context.
+
+Context:
+{context}
+
+Question:
+{query}
+
+If the answer is not present in the context, say \"I don't know based on the provided documents.\"
+"""</span>
+response = llm.invoke([HumanMessage(content=prompt)])
+<span class="k">print</span>(response.content)
+</pre>
+  </div>
+</body>
+
+</html>
